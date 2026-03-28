@@ -5,7 +5,7 @@ import base64
 import asyncio  
 import logging  
 from pathlib import Path  
-  
+import requests  
 from PIL import Image, ImageDraw, ImageFont  
 from hoshino import Service, priv  
   
@@ -15,9 +15,25 @@ logger = logging.getLogger(__name__)
 SCAN_DATA_DIR = Path(os.path.expanduser('~/.hoshino/clan_scan/'))  
 SCAN_DATA_DIR.mkdir(parents=True, exist_ok=True)  
 SCAN_FILE = SCAN_DATA_DIR / 'clan_ranking_global.json'  
-  
+# ======================== GitHub 配置 ========================  
+# 个人访问令牌，建议通过环境变量设置: export GITHUB_PAT="ghp_xxxx"  
+GITHUB_PAT = os.environ.get('GITHUB_PAT', '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')  
+GITHUB_REPO = 'duoshoumiao/chagonghui'  
+GITHUB_FILE_PATH = 'clan_scan/clan_ranking_global.json'  
+GITHUB_API_BASE = f'https://api.github.com/repos/{GITHUB_REPO}/contents/{GITHUB_FILE_PATH}'  
   
 # ======================== 字体查找 ========================  
+def _get_github_file_sha():  
+    """获取 GitHub 上文件的当前 SHA（用于更新文件时必须提供）"""  
+    headers = {  
+        'Authorization': f'token {GITHUB_PAT}',  
+        'Accept': 'application/vnd.github.v3+json',  
+    }  
+    resp = requests.get(GITHUB_API_BASE, headers=headers)  
+    if resp.status_code == 200:  
+        return resp.json().get('sha')  
+    return None
+
   
 def _find_cjk_font():  
     """  
@@ -288,3 +304,81 @@ async def search_clan_rank(bot, ev):
         await bot.send(ev, img)  
     else:  
         await bot.send(ev, '图片生成失败')
+        
+@sv.on_fullmatch('上传公会数据')  
+async def upload_clan_data(bot, ev):  
+    if not priv.check_priv(ev, priv.ADMIN):  
+        return await bot.send(ev, '仅管理员可执行此操作')  
+    if not GITHUB_PAT:  
+        return await bot.send(ev, '未配置 GitHub 个人访问令牌，请设置环境变量 GITHUB_PAT')  
+    if not SCAN_FILE.exists():  
+        return await bot.send(ev, '本地公会数据文件不存在，无法上传')  
+  
+    await bot.send(ev, '正在上传公会数据到 GitHub...')  
+  
+    try:  
+        with open(SCAN_FILE, 'r', encoding='utf-8') as f:  
+            content = f.read()  
+        content_b64 = base64.b64encode(content.encode('utf-8')).decode('utf-8')  
+  
+        headers = {  
+            'Authorization': f'token {GITHUB_PAT}',  
+            'Accept': 'application/vnd.github.v3+json',  
+        }  
+  
+        sha = _get_github_file_sha()  
+        payload = {  
+            'message': '更新公会排名数据',  
+            'content': content_b64,  
+            'branch': 'main',  
+        }  
+        if sha:  
+            payload['sha'] = sha  
+  
+        resp = requests.put(GITHUB_API_BASE, json=payload, headers=headers)  
+        if resp.status_code in (200, 201):  
+            await bot.send(ev, '公会数据已成功上传到 GitHub！')  
+        else:  
+            await bot.send(ev, f'上传失败: HTTP {resp.status_code}\n{resp.json().get("message", "")}')  
+    except Exception as e:  
+        logger.exception('上传公会数据失败')  
+        await bot.send(ev, f'上传失败: {e}')
+
+@sv.on_fullmatch('更新公会数据')  
+async def download_clan_data(bot, ev):  
+    if not priv.check_priv(ev, priv.ADMIN):  
+        return await bot.send(ev, '仅管理员可执行此操作')  
+    if not GITHUB_PAT:  
+        return await bot.send(ev, '未配置 GitHub 个人访问令牌，请设置环境变量 GITHUB_PAT')  
+  
+    await bot.send(ev, '正在从 GitHub 下载公会数据...')  
+  
+    try:  
+        headers = {  
+            'Authorization': f'token {GITHUB_PAT}',  
+            'Accept': 'application/vnd.github.v3+json',  
+        }  
+        resp = requests.get(GITHUB_API_BASE, headers=headers)  
+        if resp.status_code != 200:  
+            return await bot.send(ev, f'下载失败: HTTP {resp.status_code}\n{resp.json().get("message", "")}')  
+  
+        data = resp.json()  
+        content_b64 = data.get('content', '')  
+        # GitHub 返回的 base64 内容可能包含换行符，需要去除  
+        content_b64 = content_b64.replace('\n', '')  
+        content = base64.b64decode(content_b64).decode('utf-8')  
+  
+        # 验证 JSON 格式  
+        json.loads(content)  
+  
+        SCAN_DATA_DIR.mkdir(parents=True, exist_ok=True)  
+        with open(SCAN_FILE, 'w', encoding='utf-8') as f:  
+            f.write(content)  
+  
+        await bot.send(ev, '公会数据已成功从 GitHub 更新到本地！')  
+    except json.JSONDecodeError:  
+        await bot.send(ev, '下载的文件不是有效的 JSON 格式')  
+    except Exception as e:  
+        logger.exception('下载公会数据失败')  
+        await bot.send(ev, f'下载失败: {e}')        
+       
