@@ -17,7 +17,7 @@ SCAN_DATA_DIR.mkdir(parents=True, exist_ok=True)
 SCAN_FILE = SCAN_DATA_DIR / 'clan_ranking_global.json'  
 # ======================== GitHub 配置 ========================  
 # 个人访问令牌，建议通过环境变量设置: export GITHUB_PAT="ghp_xxxx"  
-GITHUB_PAT = os.environ.get('GITHUB_PAT', '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')  
+GITHUB_PAT = os.environ.get('GITHUB_PAT', '')  
 GITHUB_REPO = 'duoshoumiao/chagonghui'  
 GITHUB_FILE_PATH = 'clan_scan/clan_ranking_global.json'  
 GITHUB_API_BASE = f'https://api.github.com/repos/{GITHUB_REPO}/contents/{GITHUB_FILE_PATH}'  
