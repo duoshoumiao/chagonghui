@@ -17,7 +17,7 @@ SCAN_DATA_DIR.mkdir(parents=True, exist_ok=True)
 SCAN_FILE = SCAN_DATA_DIR / 'clan_ranking_global.json'  
 # ======================== GitHub 配置 ========================  
 # 个人访问令牌，建议通过环境变量设置: export GITHUB_PAT="ghp_xxxx"  
-GITHUB_PAT = os.environ.get('GITHUB_PAT', '')  
+GITHUB_PAT = os.environ.get('GITHUB_PAT', 'XXXXXX')  
 GITHUB_REPO = 'duoshoumiao/chagonghui'  
 GITHUB_FILE_PATH = 'clan_scan/clan_ranking_global.json'  
 GITHUB_API_BASE = f'https://api.github.com/repos/{GITHUB_REPO}/contents/{GITHUB_FILE_PATH}'  
@@ -363,10 +363,27 @@ async def download_clan_data(bot, ev):
             return await bot.send(ev, f'下载失败: HTTP {resp.status_code}\n{resp.json().get("message", "")}')  
   
         data = resp.json()  
-        content_b64 = data.get('content', '')  
-        # GitHub 返回的 base64 内容可能包含换行符，需要去除  
-        content_b64 = content_b64.replace('\n', '')  
-        content = base64.b64decode(content_b64).decode('utf-8')  
+        content_b64 = data.get('content')  
+  
+        if content_b64:  
+            # 文件 < 1MB，API 直接返回 base64 内容  
+            content_b64 = content_b64.replace('\n', '')  
+            content = base64.b64decode(content_b64).decode('utf-8')  
+        else:  
+            # 文件 >= 1MB，通过 Git Blobs API 获取内容（避免访问 raw.githubusercontent.com）  
+            file_sha = data.get('sha')  
+            if not file_sha:  
+                return await bot.send(ev, '无法获取文件 SHA')  
+            blob_url = f'https://api.github.com/repos/{GITHUB_REPO}/git/blobs/{file_sha}'  
+            blob_resp = requests.get(blob_url, headers={  
+                'Authorization': f'token {GITHUB_PAT}',  
+                'Accept': 'application/vnd.github.v3+json',  
+            })  
+            if blob_resp.status_code != 200:  
+                return await bot.send(ev, f'下载文件失败: HTTP {blob_resp.status_code}')  
+            blob_data = blob_resp.json()  
+            blob_content = blob_data.get('content', '').replace('\n', '')  
+            content = base64.b64decode(blob_content).decode('utf-8')
   
         # 验证 JSON 格式  
         json.loads(content)  
@@ -380,5 +397,5 @@ async def download_clan_data(bot, ev):
         await bot.send(ev, '下载的文件不是有效的 JSON 格式')  
     except Exception as e:  
         logger.exception('下载公会数据失败')  
-        await bot.send(ev, f'下载失败: {e}')        
+        await bot.send(ev, f'下载失败: {e}')      
        
