@@ -4228,7 +4228,7 @@
     "clan_name": "克鲁赛德战记",
     "leader_name": "冰封之海",
     "damage": 290404502878,
-    "member_num": 30,
+    "member_num": 29,
     "grade_rank": 529
   },
   "530": {
@@ -5836,7 +5836,7 @@
     "clan_name": "咸鱼突刺",
     "leader_name": "咸鱼宗的咸鱼",
     "damage": 263419039185,
-    "member_num": 28,
+    "member_num": 30,
     "grade_rank": 730
   },
   "731": {
@@ -5860,7 +5860,7 @@
     "clan_name": "AzumaPro加群",
     "leader_name": "LLLLLky",
     "damage": 263204012550,
-    "member_num": 29,
+    "member_num": 30,
     "grade_rank": 733
   },
   "734": {
@@ -5876,7 +5876,7 @@
     "clan_name": "雪叶落满身",
     "leader_name": "艾米的主人",
     "damage": 262916331042,
-    "member_num": 29,
+    "member_num": 30,
     "grade_rank": 735
   },
   "736": {
@@ -6084,7 +6084,7 @@
     "clan_name": "星空鱼塘",
     "leader_name": "热水",
     "damage": 259571143567,
-    "member_num": 29,
+    "member_num": 30,
     "grade_rank": 761
   },
   "762": {
@@ -10028,7 +10028,7 @@
     "clan_name": "内鬼之家",
     "leader_name": "萱",
     "damage": 140865394251,
-    "member_num": 22,
+    "member_num": 23,
     "grade_rank": 1254
   },
   "1255": {
@@ -11164,7 +11164,7 @@
     "clan_name": "Sry,Yui",
     "leader_name": "摆了",
     "damage": 118558623033,
-    "member_num": 27,
+    "member_num": 26,
     "grade_rank": 1396
   },
   "1397": {
@@ -14441,11 +14441,11 @@
   },
   "1806": {
     "rank": 1806,
-    "clan_name": "未曾完成的公主物语",
-    "leader_name": "幻象嘉德",
+    "clan_name": "该公会可能已解散",
+    "leader_name": "未知",
     "damage": 70050535805,
-    "member_num": 15,
-    "grade_rank": 1806
+    "member_num": 0,
+    "grade_rank": 0
   },
   "1807": {
     "rank": 1807,
@@ -14532,7 +14532,7 @@
     "clan_name": "镜华漏水害我村里抗洪",
     "leader_name": "皓皓",
     "damage": 68848487522,
-    "member_num": 24,
+    "member_num": 26,
     "grade_rank": 1817
   },
   "1818": {
@@ -15716,7 +15716,7 @@
     "clan_name": "找不到行会",
     "leader_name": "谪莲",
     "damage": 53024116792,
-    "member_num": 20,
+    "member_num": 21,
     "grade_rank": 1965
   },
   "1966": {
@@ -17004,7 +17004,7 @@
     "clan_name": "咲恋救济院附属养老院",
     "leader_name": "羽栖",
     "damage": 42564137502,
-    "member_num": 26,
+    "member_num": 25,
     "grade_rank": 2126
   },
   "2127": {
@@ -18044,7 +18044,7 @@
     "clan_name": "湿人联盟",
     "leader_name": "沐寒",
     "damage": 35614951896,
-    "member_num": 28,
+    "member_num": 29,
     "grade_rank": 2256
   },
   "2257": {
@@ -18548,7 +18548,7 @@
     "clan_name": "猫的咖啡庄园",
     "leader_name": "伊谷宇",
     "damage": 33368881248,
-    "member_num": 21,
+    "member_num": 22,
     "grade_rank": 2319
   },
   "2320": {
@@ -18580,7 +18580,7 @@
     "clan_name": "爆裂魔法！",
     "leader_name": "[60]天剑",
     "damage": 33156963467,
-    "member_num": 23,
+    "member_num": 24,
     "grade_rank": 2323
   },
   "2324": {
@@ -18612,7 +18612,7 @@
     "clan_name": "失忆舰长社区",
     "leader_name": "吉祥物",
     "damage": 32932573777,
-    "member_num": 30,
+    "member_num": 29,
     "grade_rank": 2327
   },
   "2328": {
@@ -18644,7 +18644,7 @@
     "clan_name": "迷途猫之家",
     "leader_name": "羽寻白金",
     "damage": 32751213595,
-    "member_num": 23,
+    "member_num": 26,
     "grade_rank": 2331
   },
   "2332": {
@@ -19308,7 +19308,7 @@
     "clan_name": "光头之家",
     "leader_name": "天才美少女卡勾",
     "damage": 29199493809,
-    "member_num": 22,
+    "member_num": 24,
     "grade_rank": 2414
   },
   "2415": {
@@ -20412,7 +20412,7 @@
     "clan_name": "人理保障A组",
     "leader_name": "一个吊爆的名字",
     "damage": 23932572976,
-    "member_num": 19,
+    "member_num": 17,
     "grade_rank": 2552
   },
   "2553": {
@@ -21052,7 +21052,7 @@
     "clan_name": "碧蓝丿天地",
     "leader_name": "咸鱼",
     "damage": 21423299284,
-    "member_num": 30,
+    "member_num": 29,
     "grade_rank": 2632
   },
   "2633": {
@@ -21436,7 +21436,7 @@
     "clan_name": "救赎",
     "leader_name": "贝石",
     "damage": 19866389870,
-    "member_num": 29,
+    "member_num": 30,
     "grade_rank": 2680
   },
   "2681": {
@@ -21820,7 +21820,7 @@
     "clan_name": "茗之屋",
     "leader_name": "林汐",
     "damage": 18495826482,
-    "member_num": 24,
+    "member_num": 25,
     "grade_rank": 2728
   },
   "2729": {
@@ -23996,7 +23996,7 @@
     "clan_name": "天野文学社",
     "leader_name": "矢木身",
     "damage": 11863665378,
-    "member_num": 25,
+    "member_num": 26,
     "grade_rank": 3000
   },
   "3001": {
@@ -25084,7 +25084,7 @@
     "clan_name": "黄金猪帽子亭（美味）",
     "leader_name": "恰夜宵咩",
     "damage": 9479836898,
-    "member_num": 30,
+    "member_num": 29,
     "grade_rank": 3136
   },
   "3137": {
@@ -26796,7 +26796,7 @@
     "clan_name": "兔子粉丝后援会",
     "leader_name": "姆q",
     "damage": 7984400000,
-    "member_num": 28,
+    "member_num": 27,
     "grade_rank": 3350
   },
   "3351": {
@@ -29892,7 +29892,7 @@
     "clan_name": "休伯利安号",
     "leader_name": "看板娘团座",
     "damage": 6331000000,
-    "member_num": 27,
+    "member_num": 28,
     "grade_rank": 3737
   },
   "3738": {
@@ -30756,7 +30756,7 @@
     "clan_name": "此花亭",
     "leader_name": "倾星辰",
     "damage": 5929581900,
-    "member_num": 29,
+    "member_num": 30,
     "grade_rank": 3845
   },
   "3846": {
@@ -32404,7 +32404,7 @@
     "clan_name": "公主连结攻略组",
     "leader_name": "千秋",
     "damage": 4996800000,
-    "member_num": 20,
+    "member_num": 19,
     "grade_rank": 4051
   },
   "4052": {
@@ -37732,7 +37732,7 @@
     "clan_name": "放课后茶会",
     "leader_name": "佑树",
     "damage": 3469268582,
-    "member_num": 17,
+    "member_num": 18,
     "grade_rank": 4717
   },
   "4718": {
