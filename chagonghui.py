@@ -3,6 +3,7 @@ import os
 import io  
 import base64  
 import asyncio  
+from datetime import datetime
 import logging  
 from pathlib import Path  
 import requests  
@@ -15,7 +16,10 @@ logger = logging.getLogger(__name__)
 # 扫描结果存储路径（与原插件保持一致）  
 SCAN_DATA_DIR = Path(os.path.expanduser('~/.hoshino/clan_scan/'))  
 SCAN_DATA_DIR.mkdir(parents=True, exist_ok=True)  
-SCAN_FILE = SCAN_DATA_DIR / 'clan_ranking_global.json'  
+SCAN_FILE = SCAN_DATA_DIR / 'clan_ranking_global.json' 
+# 历史排名数据存储路径  
+HISTORY_DIR = SCAN_DATA_DIR / 'history'  
+HISTORY_DIR.mkdir(parents=True, exist_ok=True) 
 # ======================== GitHub 配置 ========================  
 GITHUB_PAT = os.environ.get('GITHUB_PAT', '')  
 GITHUB_REPO = 'duoshoumiao/chagonghui'  
@@ -62,7 +66,7 @@ sv = Service(
     name='公会查询',  
     visible=True,  
     enable_on_default=False,  
-    help_='【查会长 关键词】按会长名搜索公会\n【查公会 关键词】按公会名搜索公会\n【查排名 数字】按排名查询公会，支持逗号分隔多个排名',  
+    help_='【查会长 关键词】按会长名搜索公会\n【查公会 关键词】按公会名搜索公会\n【查排名 数字】按排名查询公会，支持逗号分隔多个排名\n【查日历 公会名 年月】查看公会月度排名日历',  
 )  
   
   
@@ -110,16 +114,65 @@ async def _do_download_clan_data():
     logger.info('[公会查询] 自动更新公会数据成功')  
   
   
-@scheduler.scheduled_job('cron', minute='10,40')
-async def auto_update_clan_data():  
-    """每小时第10,40分钟自动从 GitHub 更新公会数据"""  
-    try:  
+@scheduler.scheduled_job('cron', minute='5,35')  
+async def auto_update_clan_data():    
+    """每小时第5,35分钟自动从 GitHub 更新公会数据"""    
+    try:    
         await _do_download_clan_data()  
-    except json.JSONDecodeError:  
-        logger.error('[公会查询] 自动更新失败: 下载的文件不是有效的 JSON')  
-    except Exception as e:  
-        logger.exception(f'[公会查询] 自动更新失败: {e}')  
+    except json.JSONDecodeError:    
+        logger.error('[公会查询] 自动更新失败: 下载的文件不是有效的 JSON')    
+    except Exception as e:    
+        logger.exception(f'[公会查询] 自动更新失败: {e}')    
   
+@scheduler.scheduled_job('cron', hour=5, minute=5)    
+async def save_daily_ranking_history():    
+    """每天5点05分保存排名历史数据"""    
+    try:    
+        await _do_download_clan_data()    
+        _save_ranking_history()    
+    except json.JSONDecodeError:    
+        logger.error('[公会查询] 保存历史数据失败: 下载的文件不是有效的 JSON')    
+    except Exception as e:    
+        logger.exception(f'[公会查询] 保存历史数据失败: {e}')
+        
+def _save_ranking_history():  
+    """保存每日排名历史数据"""  
+    if not SCAN_FILE.exists():  
+        logger.warning('[公会查询] 排名文件不存在，跳过历史数据保存')  
+        return  
+      
+    try:  
+        with open(SCAN_FILE, 'r', encoding='utf-8') as f:  
+            all_clans = json.load(f)  
+          
+        # 按公会名组织数据：{公会名: 排名}  
+        daily_ranking = {c['clan_name']: c['rank'] for c in all_clans.values()}  
+          
+        # 获取当前日期  
+        now = datetime.now()  
+        date_str = now.strftime('%Y-%m-%d')  
+        month_str = now.strftime('%Y-%m')  
+          
+        # 历史文件路径  
+        history_file = HISTORY_DIR / f'{month_str}.json'  
+          
+        # 读取或创建历史数据  
+        if history_file.exists():  
+            with open(history_file, 'r', encoding='utf-8') as f:  
+                history_data = json.load(f)  
+        else:  
+            history_data = {}  
+          
+        # 追加当日数据  
+        history_data[date_str] = daily_ranking  
+          
+        # 保存  
+        with open(history_file, 'w', encoding='utf-8') as f:  
+            json.dump(history_data, f, ensure_ascii=False, indent=2)  
+          
+        logger.info(f'[公会查询] 已保存 {date_str} 的排名历史数据')  
+    except Exception as e:  
+        logger.exception(f'[公会查询] 保存历史数据失败: {e}')  
   
 # ======================== 图片渲染 ========================  
   
@@ -201,7 +254,79 @@ def generate_clan_image(clans, title=''):
     image.save(buf, format='PNG')  
     b64 = base64.b64encode(buf.getvalue()).decode()  
     return f'[CQ:image,file=base64://{b64}]'  
-  
+
+def generate_calendar_image(clan_name, history_data, month_str):  
+    """生成公会月度排名日历图片"""  
+    if not history_data:  
+        return None  
+      
+    # 按日期排序  
+    sorted_dates = sorted(history_data.keys())  
+      
+    # 提取该公会的每日排名  
+    daily_ranks = []  
+    for date in sorted_dates:  
+        rank = history_data[date].get(clan_name)  
+        if rank is not None:  
+            daily_ranks.append({'date': date, 'rank': rank})  
+      
+    if not daily_ranks:  
+        return None  
+      
+    # 日历布局参数  
+    CELL_W = 80  
+    CELL_H = 60  
+    COLS = 7  # 一周7天  
+    GAP_X = 8  
+    GAP_Y = 8  
+    MARGIN = 24  
+    TITLE_H = 60  
+    HEADER_H = 30  
+      
+    rows = (len(daily_ranks) + COLS - 1) // COLS  
+    img_w = MARGIN * 2 + COLS * CELL_W + (COLS - 1) * GAP_X  
+    img_h = MARGIN * 2 + TITLE_H + HEADER_H + rows * CELL_H + (rows - 1) * GAP_Y  
+      
+    image = Image.new('RGB', (img_w, img_h), (255, 252, 245))  
+    draw = ImageDraw.Draw(image)  
+      
+    title_font = ImageFont.truetype(FONT_FILE, 24)  
+    header_font = ImageFont.truetype(FONT_FILE, 14)  
+    date_font = ImageFont.truetype(FONT_FILE, 12)  
+    rank_font = ImageFont.truetype(FONT_FILE, 20)  
+      
+    # 标题  
+    draw.text((MARGIN, MARGIN), f'{clan_name} - {month_str} 排名日历', fill=(80, 60, 40), font=title_font)  
+      
+    # 星期表头  
+    weekdays = ['日', '一', '二', '三', '四', '五', '六']  
+    for i, day in enumerate(weekdays):  
+        x = MARGIN + i * (CELL_W + GAP_X)  
+        draw.text((x + CELL_W // 2 - 7, MARGIN + TITLE_H + 5), day, fill=(100, 90, 80), font=header_font)  
+      
+    # 绘制每日排名  
+    for idx, item in enumerate(daily_ranks):  
+        col = idx % COLS  
+        row = idx // COLS  
+        x = MARGIN + col * (CELL_W + GAP_X)  
+        y = MARGIN + TITLE_H + HEADER_H + row * (CELL_H + GAP_Y)  
+          
+        # 背景框  
+        draw.rectangle([x, y, x + CELL_W, y + CELL_H], fill=(255, 255, 255), outline=(210, 200, 185))  
+          
+        # 日期（只显示日）  
+        day_num = item['date'].split('-')[2]  
+        draw.text((x + 5, y + 5), day_num, fill=(100, 90, 80), font=date_font)  
+          
+        # 排名  
+        rank = item['rank']  
+        rank_color = (200, 50, 50) if rank <= 10 else (50, 50, 50)  
+        draw.text((x + CELL_W // 2 - 10, y + 30), f'#{rank}', fill=rank_color, font=rank_font)  
+      
+    buf = io.BytesIO()  
+    image.save(buf, format='PNG')  
+    b64 = base64.b64encode(buf.getvalue()).decode()  
+    return f'[CQ:image,file=base64://{b64}]'
   
 # ======================== 指令处理 ========================  
   
@@ -330,3 +455,36 @@ async def search_clan_rank(bot, ev):
         await bot.send(ev, img)  
     else:  
         await bot.send(ev, '图片生成失败')
+       
+@sv.on_prefix('查日历')  
+async def search_clan_calendar(bot, ev):  
+    """查询公会月度排名日历"""  
+    args = ev.message.extract_plain_text().strip().split()  
+      
+    if len(args) < 1:  
+        return await bot.send(ev, '请输入公会名，例如：查日历 U.N.A\n或指定月份：查日历 U.N.A 2024-01')  
+      
+    clan_name = args[0]  
+    month_str = args[1] if len(args) > 1 else datetime.now().strftime('%Y-%m')  
+      
+    # 验证月份格式  
+    if len(month_str) != 7 or month_str[4] != '-':
+        return await bot.send(ev, '月份格式错误，应为 YYYY-MM 格式，例如：2024-01')  
+      
+    history_file = HISTORY_DIR / f'{month_str}.json'  
+      
+    if not history_file.exists():  
+        return await bot.send(ev, f'暂无 {month_str} 的历史数据')  
+      
+    try:  
+        with open(history_file, 'r', encoding='utf-8') as f:  
+            history_data = json.load(f)  
+          
+        img = generate_calendar_image(clan_name, history_data, month_str)  
+        if img:  
+            await bot.send(ev, img)  
+        else:  
+            await bot.send(ev, f'未找到公会"{clan_name}"在 {month_str} 的排名数据')  
+    except Exception as e:  
+        logger.exception(f'[公会查询] 查询日历失败: {e}')  
+        await bot.send(ev, '查询失败，请稍后重试')       
