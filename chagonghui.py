@@ -124,15 +124,36 @@ async def auto_update_clan_data():
     except Exception as e:    
         logger.exception(f'[公会查询] 自动更新失败: {e}')    
   
-@scheduler.scheduled_job('cron', hour=5, minute=5)    
-async def save_daily_ranking_history():    
-    """每天5点05分保存排名历史数据"""    
-    try:    
-        await _do_download_clan_data()    
-        _save_ranking_history()    
-    except json.JSONDecodeError:    
-        logger.error('[公会查询] 保存历史数据失败: 下载的文件不是有效的 JSON')    
-    except Exception as e:    
+@scheduler.scheduled_job('cron', hour=5, minute=5)      
+async def save_daily_ranking_history():      
+    """每天5点05分保存排名历史数据"""      
+    max_retries = 30  
+    retry_delay = 5  # 秒  
+      
+    for attempt in range(max_retries):  
+        try:      
+            await _do_download_clan_data()  
+            # 下载成功，跳出重试循环  
+            break  
+        except json.JSONDecodeError as e:      
+            logger.error(f'[公会查询] 下载最新数据失败 (尝试 {attempt + 1}/{max_retries}): 文件不是有效的 JSON')  
+            if attempt < max_retries - 1:  
+                await asyncio.sleep(retry_delay)  
+            else:  
+                logger.error('[公会查询] 下载重试次数已用尽，放弃下载')  
+                return  
+        except Exception as e:      
+            logger.exception(f'[公会查询] 下载最新数据失败 (尝试 {attempt + 1}/{max_retries}): {e}')  
+            if attempt < max_retries - 1:  
+                await asyncio.sleep(retry_delay)  
+            else:  
+                logger.error('[公会查询] 下载重试次数已用尽，放弃下载')  
+                return  
+      
+    # 下载成功后保存历史数据  
+    try:  
+        _save_ranking_history()  
+    except Exception as e:  
         logger.exception(f'[公会查询] 保存历史数据失败: {e}')
         
 def _save_ranking_history():  
@@ -268,7 +289,12 @@ def generate_calendar_image(clan_name, history_data, month_str):
     for date in sorted_dates:  
         rank = history_data[date].get(clan_name)  
         if rank is not None:  
-            daily_ranks.append({'date': date, 'rank': rank})  
+            # 解析日期并获取星期几  
+            date_obj = datetime.strptime(date, '%Y-%m-%d')  
+            weekday = date_obj.weekday()  # 0=周一, 6=周日  
+            # 转换为周日=0, 周一=1, ..., 周六=6  
+            weekday = (weekday + 1) % 7  
+            daily_ranks.append({'date': date, 'rank': rank, 'weekday': weekday})  
       
     if not daily_ranks:  
         return None  
@@ -283,7 +309,15 @@ def generate_calendar_image(clan_name, history_data, month_str):
     TITLE_H = 60  
     HEADER_H = 30  
       
-    rows = (len(daily_ranks) + COLS - 1) // COLS  
+    # 计算需要的行数（根据日期范围）  
+    if daily_ranks:  
+        min_date = datetime.strptime(daily_ranks[0]['date'], '%Y-%m-%d')  
+        max_date = datetime.strptime(daily_ranks[-1]['date'], '%Y-%m-%d')  
+        days_span = (max_date - min_date).days + 1  
+        rows = (days_span + COLS - 1) // COLS  
+    else:  
+        rows = 1  
+      
     img_w = MARGIN * 2 + COLS * CELL_W + (COLS - 1) * GAP_X  
     img_h = MARGIN * 2 + TITLE_H + HEADER_H + rows * CELL_H + (rows - 1) * GAP_Y  
       
@@ -304,24 +338,36 @@ def generate_calendar_image(clan_name, history_data, month_str):
         x = MARGIN + i * (CELL_W + GAP_X)  
         draw.text((x + CELL_W // 2 - 7, MARGIN + TITLE_H + 5), day, fill=(100, 90, 80), font=header_font)  
       
-    # 绘制每日排名  
-    for idx, item in enumerate(daily_ranks):  
-        col = idx % COLS  
-        row = idx // COLS  
-        x = MARGIN + col * (CELL_W + GAP_X)  
-        y = MARGIN + TITLE_H + HEADER_H + row * (CELL_H + GAP_Y)  
-          
-        # 背景框  
-        draw.rectangle([x, y, x + CELL_W, y + CELL_H], fill=(255, 255, 255), outline=(210, 200, 185))  
-          
-        # 日期（只显示日）  
-        day_num = item['date'].split('-')[2]  
-        draw.text((x + 5, y + 5), day_num, fill=(100, 90, 80), font=date_font)  
-          
-        # 排名  
-        rank = item['rank']  
-        rank_color = (200, 50, 50) if rank <= 10 else (50, 50, 50)  
-        draw.text((x + CELL_W // 2 - 10, y + 30), f'#{rank}', fill=rank_color, font=rank_font)  
+    # 创建日期到位置的映射  
+    date_to_pos = {}  
+    for item in daily_ranks:  
+        date_to_pos[item['date']] = item  
+      
+    # 按日期范围绘制日历  
+    if daily_ranks:  
+        start_date = datetime.strptime(daily_ranks[0]['date'], '%Y-%m-%d')  
+        for idx in range(len(daily_ranks)):  
+            item = daily_ranks[idx]  
+            current_date = datetime.strptime(item['date'], '%Y-%m-%d')  
+            day_offset = (current_date - start_date).days  
+              
+            row = day_offset // COLS  
+            col = item['weekday']  
+              
+            x = MARGIN + col * (CELL_W + GAP_X)  
+            y = MARGIN + TITLE_H + HEADER_H + row * (CELL_H + GAP_Y)  
+              
+            # 背景框  
+            draw.rectangle([x, y, x + CELL_W, y + CELL_H], fill=(255, 255, 255), outline=(210, 200, 185))  
+              
+            # 日期（只显示日）  
+            day_num = item['date'].split('-')[2]  
+            draw.text((x + 5, y + 5), day_num, fill=(100, 90, 80), font=date_font)  
+              
+            # 排名  
+            rank = item['rank']  
+            rank_color = (200, 50, 50) if rank <= 10 else (50, 50, 50)  
+            draw.text((x + CELL_W // 2 - 10, y + 30), f'#{rank}', fill=rank_color, font=rank_font)  
       
     buf = io.BytesIO()  
     image.save(buf, format='PNG')  
