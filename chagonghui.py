@@ -124,9 +124,9 @@ async def auto_update_clan_data():
     except Exception as e:    
         logger.exception(f'[公会查询] 自动更新失败: {e}')    
   
-@scheduler.scheduled_job('cron', hour=5, minute=5)      
+@scheduler.scheduled_job('cron', hour=5, minute=10)      
 async def save_daily_ranking_history():      
-    """每天5点05分保存排名历史数据"""      
+    """每天5点010分保存排名历史数据"""      
     max_retries = 30  
     retry_delay = 5  # 秒  
       
