@@ -3,11 +3,7 @@ import os
 import io  
 import base64  
 import asyncio  
-<<<<<<< HEAD
 from datetime import datetime, timedelta
-=======
-from datetime import datetime
->>>>>>> db1ca4ca737034ccda9ce5b6f87d13a314693530
 import logging  
 from pathlib import Path  
 import requests  
@@ -315,19 +311,12 @@ def generate_calendar_image(clan_name, history_data, month_str):
       
     # 计算需要的行数（根据日期范围）  
     if daily_ranks:  
-<<<<<<< HEAD
         min_date = datetime.strptime(daily_ranks[0]['date'], '%Y-%m-%d')    
         max_date = datetime.strptime(daily_ranks[-1]['date'], '%Y-%m-%d')    
         start_weekday = (min_date.weekday() + 1) % 7    
         week_start = min_date - timedelta(days=start_weekday)    
         days_span = (max_date - week_start).days + 1    
         rows = (days_span + COLS - 1) // COLS
-=======
-        min_date = datetime.strptime(daily_ranks[0]['date'], '%Y-%m-%d')  
-        max_date = datetime.strptime(daily_ranks[-1]['date'], '%Y-%m-%d')  
-        days_span = (max_date - min_date).days + 1  
-        rows = (days_span + COLS - 1) // COLS  
->>>>>>> db1ca4ca737034ccda9ce5b6f87d13a314693530
     else:  
         rows = 1  
       
@@ -358,7 +347,6 @@ def generate_calendar_image(clan_name, history_data, month_str):
       
     # 按日期范围绘制日历  
     if daily_ranks:  
-<<<<<<< HEAD
         first_date = datetime.strptime(daily_ranks[0]['date'], '%Y-%m-%d')    
         first_weekday = (first_date.weekday() + 1) % 7    
         week_start = first_date - timedelta(days=first_weekday)    
@@ -369,16 +357,6 @@ def generate_calendar_image(clan_name, history_data, month_str):
                 
             row = day_offset // COLS    
             col = item['weekday']
-=======
-        start_date = datetime.strptime(daily_ranks[0]['date'], '%Y-%m-%d')  
-        for idx in range(len(daily_ranks)):  
-            item = daily_ranks[idx]  
-            current_date = datetime.strptime(item['date'], '%Y-%m-%d')  
-            day_offset = (current_date - start_date).days  
-              
-            row = day_offset // COLS  
-            col = item['weekday']  
->>>>>>> db1ca4ca737034ccda9ce5b6f87d13a314693530
               
             x = MARGIN + col * (CELL_W + GAP_X)  
             y = MARGIN + TITLE_H + HEADER_H + row * (CELL_H + GAP_Y)  
@@ -559,8 +537,4 @@ async def search_clan_calendar(bot, ev):
             await bot.send(ev, f'未找到公会"{clan_name}"在 {month_str} 的排名数据')  
     except Exception as e:  
         logger.exception(f'[公会查询] 查询日历失败: {e}')  
-<<<<<<< HEAD
         await bot.send(ev, '查询失败，请稍后重试')       
-=======
-        await bot.send(ev, '查询失败，请稍后重试')       
->>>>>>> db1ca4ca737034ccda9ce5b6f87d13a314693530
